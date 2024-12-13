@@ -1,0 +1,75 @@
+dataset:
+  exp: BUSI_original_full_supervised
+  dimension: 2D
+  num_classes: 2
+  label_list: [0,1]
+  root_dir: /data/heshihuan/datasets/BUSI/train_val_test_256X256_7_1_2
+
+  in_channels: 1
+  kwargs:
+    labeled_num: 1.0  #只有两种，1《》16 16 ，， 0< <1 《对应》半监督 此时必须labeled_bs=batch_size/2，可以用来计算只有a%时的监督性能
+    labeled_bs: 16
+    batch_size: 16
+    batch_size_val: 1
+    num_workers: 16
+    resize_size: [224 , 224]
+
+#    train_transforms:
+#      - name: Resize
+#        kwargs: { size: [ 224, 224 ] }
+#      - name: ToTensor
+#      - name: RandomRotation90
+#        kwargs: { p: 0.5 }
+#      - name: RandomRotation
+#        kwargs: { degrees: [-20.0, 20.0] }
+#      - name: RandomCrop
+#        kwargs: { size: [ 224, 224 ] }
+#      - name: RandomFlip
+#        kwargs: { p: 0.5 }
+#      - name: ColorJitter
+#        kwargs: { brightness: 0.4,contrast: 0.4,saturation: 0.4,hue: 0.1,p: 0.8 }
+#    val_transforms:
+#      - name: Resize
+#        kwargs: { size: [ 224, 224 ] }
+#      - name: ToTensor
+
+network:
+  net_type: unet #resunet #unet
+  backbone: resnet50
+  aux_loss:
+    ndim: 256  # 取出中间特征图(128,32,32)辅助resnet34
+    loss_weight: 0.4
+  decoder:
+    type: decoder_deeplabv3_plus
+    kwargs:
+      inner_planes: 256  #ASPP的输出维度，ASPP256 -> projhead ->low_conv_count128
+      dilations: [12, 24, 36]
+      low_conv_in: 64  #具体特征（低级特征维度）
+      low_conv_out: 128   #代之原型向量长度
+      seg_head_out_dim: 128
+
+lr:
+  base_lr: 0.05
+
+loss:
+  consistency: 0.1
+  consistency_rampup: 1000.0
+
+
+save:
+  val_interval: 100
+  max_iterations: 20000
+  cur_program_log_root: null
+
+
+logging:
+  logfile_level: info
+  stdout_level: info
+  log_file: info_
+  log_format: '%(asctime)s %(levelname)-7s %(message)s'
+  rewrite: true
+  log_to_file:
+
+
+
+

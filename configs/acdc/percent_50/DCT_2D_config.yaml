@@ -1,0 +1,39 @@
+dataset:
+  exp: ACDC_semi
+  subset_name: null
+  dimension: 3D
+  num_classes: 4
+  label_list:
+  - 0
+  - 1
+  - 2
+  - 3
+  root_dir: /data/heshihuan/datasets/ACDC
+  in_channels: 1
+  kwargs:
+    labeled_num: 7.0
+    labeled_bs: 8
+    batch_size: 16
+    batch_size_val: 1
+    num_workers: 16
+    resize_size:
+    - 256
+    - 256
+network:
+  net_type: DCT_2D
+lr:
+  base_lr: 0.05
+loss:
+  consistency: 0.01
+  consistency_rampup: 1000.0
+save:
+  val_interval: 100
+  max_iterations: 20000
+  cur_program_log_root: null
+logging:
+  logfile_level: info
+  stdout_level: info
+  log_file: info_
+  log_format: '%(asctime)s %(levelname)-7s %(message)s'
+  rewrite: true
+  log_to_file: null

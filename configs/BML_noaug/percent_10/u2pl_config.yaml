@@ -1,0 +1,97 @@
+dataset:
+  exp: breast_BML_noaug_semi
+  dimension: 2D
+  num_classes: 2
+  label_list:
+  - 0
+  - 1
+  root_dir: /data/heshihuan/datasets/BML/merge_train_val_test_7_1_2
+  in_channels: 1
+  kwargs:
+    labeled_num: 0.1
+    labeled_bs: 8
+    batch_size: 16
+    batch_size_val: 1
+    num_workers: 8
+    resize_size:
+    - 256
+    - 256
+  noise_std: 0.1
+  ignore_label: -1
+lr:
+  base_lr: 0.05
+trainer:
+  epochs: null
+  eval_on: true
+  sup_only_epoch: 0
+  optimizer:
+    type: SGD
+    kwargs:
+      lr: 0.01
+      momentum: 0.9
+      weight_decay: 0.0005
+  lr_scheduler:
+    mode: poly
+    kwargs:
+      power: 0.9
+      min_lr: 1.0e-05
+  unsupervised:
+    TTA: false
+    drop_percent: 80
+    apply_aug: cutmix
+  contrastive:
+    negative_high_entropy: true
+    low_rank: 3
+    high_rank: 20
+    current_class_threshold: 0.3
+    current_class_negative_threshold: 1
+    unsupervised_entropy_ignore: 80
+    low_entropy_threshold: 20
+    num_negatives: 50
+    num_queries: 256
+    temperature: 0.5
+    loss_weight: 1
+criterion:
+  type: ohem
+  kwargs:
+    thresh: 0.7
+    min_kept: 100000
+network:
+  net_type: unet_u2pl
+  bonetype:
+    name: std
+  ema_decay: 0.99
+  aux_loss:
+    aux_plane: 128
+    loss_weight: 0.4
+  encoder:
+    type: u2pl.models.resnet.resnet34
+    kwargs:
+      multi_grid: false
+      zero_init_residual: true
+      fpn: true
+      replace_stride_with_dilation:
+      - false
+      - false
+      - false
+  decoder:
+    type: decoder_deeplabv3_plus
+    kwargs:
+      inner_planes: 256
+      dilations:
+      - 12
+      - 24
+      - 36
+      low_conv_in: 32
+      low_conv_out: 128
+save:
+  val_interval: 100
+  max_iterations: 20000
+  cur_program_log_root: null
+logging:
+  logfile_level: info
+  stdout_level: info
+  log_file: info_
+  log_format: '%(asctime)s %(levelname)-7s %(message)s'
+  rewrite: true
+  log_to_file: null

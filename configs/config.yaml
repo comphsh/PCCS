@@ -1,0 +1,173 @@
+dataset:
+  type: acdc_semi
+  subset_name:
+  num_classes: 4
+  label_list: [0,1,2,3]
+  root_dir: /home/lu/HeSH/datasets/ACDC/ACDC
+  kwargs:
+    labeled_num: 7
+    labeled_bs: 8
+    batch_size: 16
+    batch_size_val: 16
+    num_workers: 0
+    train_transforms:
+      - name: RandomGenerator
+        #        kwargs: { output_size: [ 224, 224 ], p_flip: 0.0, p_rot: 0.0 }
+        kwargs: { output_size: [ 224, 224 ], p_flip: 0.5, p_rot: 0.5 }
+      - name: ToRGB
+      - name: RandomCrop
+        kwargs: { size: [ 224, 224 ] }
+      - name: RandomFlip
+        kwargs: { p: 0.5 }
+      - name: ColorJitter
+        kwargs: { brightness: 0.4,contrast: 0.4, saturation: 0.4, hue: 0.1, p: 0.8 }
+    val_transforms:
+      - name: RandomGenerator
+        kwargs:
+          p_flip: 0.0
+          p_rot: 0.0
+          output_size: [ 224, 224 ]
+      - name: ToRGB
+    normalize:
+      div_value: 255.0
+      mean_value: [0.485, 0.456, 0.406]
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+
+#  train:
+#    data_root: ../../../../data/cityscapes
+#    data_list: ../../../../data/splits/cityscapes/744/labeled.txt
+#    flip: True
+#    GaussianBlur: False
+#    rand_resize: [0.5, 2.0]
+#    #rand_rotation: [-10.0, 10.0]
+#    crop:
+#      type: rand
+#      size: [769, 769] # crop image with HxW size
+#  val:
+#    data_root: ../../../../data/cityscapes
+#    data_list: ../../../../data/splits/cityscapes/val.txt
+#    crop:
+#      type: center
+#      size: [769, 769] # crop image with HxW size
+#  batch_size: 2
+#  n_sup: 744
+  noise_std: 0.1
+#  workers: 2
+#  mean: [123.675, 116.28, 103.53]
+#  std: [58.395, 57.12, 57.375]
+  ignore_label: -1
+
+trainer: # Required.
+#  epochs: 200
+  epochs:
+  eval_on: True
+  sup_only_epoch: 0
+  optimizer:
+    type: SGD
+    kwargs:
+      lr: 0.01  # 8GPUs
+      momentum: 0.9
+      weight_decay: 0.0005
+  lr_scheduler:
+    mode: poly
+    kwargs:
+      power: 0.9
+      min_lr: 0.00001
+
+  unsupervised:
+    TTA: False
+    drop_percent: 80
+    apply_aug: cutmix
+  contrastive:
+    negative_high_entropy: True
+    low_rank: 3
+    high_rank: 20
+    current_class_threshold: 0.3
+    current_class_negative_threshold: 1
+    unsupervised_entropy_ignore: 80
+    low_entropy_threshold: 20
+    num_negatives: 50
+    num_queries: 256
+    temperature: 0.5
+    loss_weight: 1
+
+saver:
+  auto_resume: True
+  snapshot_dir: results
+  pretrain: null
+#  pretrain: /home/lu/HeSH/pretrain_pth/resnet34-333f7ec4.pth
+
+criterion:
+  type: ohem
+  kwargs:
+    thresh: 0.7
+    min_kept: 100000
+
+net: # Required.
+  num_classes: 4
+#  sync_bn: True
+  sync_bn: false
+  ema_decay: 0.99
+  aux_loss:
+#    aux_plane: 1024  #resnet101
+    aux_plane: 256  #resnet34
+    loss_weight: 0.4
+  encoder:
+    type: u2pl.models.resnet.resnet34
+    kwargs:
+#      multi_grid: True
+      multi_grid: false
+      zero_init_residual: True
+      fpn: True
+#      replace_stride_with_dilation: [False, True, True]  #layer0...1 is fixed, layer2...4
+      replace_stride_with_dilation: [False, False, False]  #layer0...1 is fixed, layer2...4
+
+  decoder:
+    type: u2pl.models.decoder.dec_deeplabv3_plus
+#    type: u2pl.models.decoder.dec_deeplabv3
+    kwargs:
+      inner_planes: 256
+#      inner_planes: 64
+      dilations: [12, 24, 36]
+      low_conv_in: 128    # [128,128]->conv2(29*29)  [256*256]->conv3(15*15)
+      low_conv_out: 128   #代之原型向量长度
+
+bonetype:
+  name: std
+#  name: u2pl
+
+
+network:
+  backbone: resnet34
+  bn_type: torchbn
+  in_channels: 3
+  pretrained: /home/lu/HeSH/pretrain_pth/resnet34-333f7ec4.pth
+
+
+metrics:
+  name: Dice,Jaccard,95HD
+  class_indexs: [0,1,2,3]
+  class_names: [bg,c1,c2,c3]
+
+save_solver:
+  display_iter: 10
+  val_interval: 10
+  max_iters: 10000
+  max_epoch: null
+  checkpoints_name: acdc_seg
+  checkpoints_dir: results/acdc
+  save_ckpt_interval: 3000
+  cur_program_log_root: null
+
+logging:
+  logfile_level: info
+  stdout_level: info
+  log_file: info_
+  log_format: '%(asctime)s %(levelname)-7s %(message)s'
+  rewrite: true
+  log_to_file:
+
+
+
+
